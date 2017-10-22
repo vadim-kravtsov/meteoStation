@@ -20,10 +20,10 @@ def periodically_called():
 	while True:
 		sleep(1)
 		data = ser.readline().split()
-		data[0] = '%.1f' % float(data[0])
-		data[1] = '%.0f' % float(data[1])
-		data[2] = '%.1f' % float(data[2])
-		if data:
+		if len(data) == 3:
+			data[0] = '%.1f' % float(data[0])
+			data[1] = '%.0f' % float(data[1])
+			data[2] = '%.1f' % float(data[2])
 			t.set('Temperature:\n'+data[0]+' *C')
 			p.set('Pressure:\n'+data[1]+' mmHg')
 			h.set('Humidity:\n'+data[2]+' %')
