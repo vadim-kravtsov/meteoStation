@@ -3,8 +3,13 @@ from Tkinter import *
 import tkFont
 from time import sleep
 import threading
+import os
 
-ser = serial.Serial('/dev/ttyUSB0', baudrate = 9600, timeout = 1)
+if os.name == 'nt':
+	ser = serial.Serial('COM3', baudrate = 9600, timeout = 1)
+else:
+	ser = serial.Serial('/dev/ttyUSB0', baudrate = 9600, timeout = 1)
+	
 data = ser.readline().split()
 
 root = Tk()
