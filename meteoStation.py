@@ -55,9 +55,14 @@ def periodically_called():
 			if i==2:
 				D[0].append(k)
 				D[1].append(float(data[2]))
-				a.ylim = [min(D[1]), max(D[1])] 
-				a.plot(D[0],D[1],color='blue')
+				
+				D[0] = D[0][-10:]
+				D[1] = D[1][-10:]
+				a.set_ylim(10, 80)
+				a.set_xlim(min(D[0]), max(D[0]))
+				newGraph = a.plot(D[0],D[1],color='blue')[0]
 				canvas.draw()
+				newGraph.remove()
 				i=0
 			i=i+1
 			k+=1
