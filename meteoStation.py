@@ -1,14 +1,14 @@
 import serial
 import os
-from time import sleep, clock
+from time import sleep, time
 
-file = open('data.txt', 'w')
-file.write('Flux Humidity SkyT AmbientT InsideT\n')
+file = open('data.txt', 'a')
+#file.write('Flux Humidity SkyT AmbientT InsideT\n')
 def open_serial_port():
 	if os.name == 'nt':
 		ser = serial.Serial('COM3', baudrate = 9600, timeout = 1)
 	else:
-		ser = serial.Serial('/dev/ttyACM3', baudrate = 9600, timeout = 1)
+		ser = serial.Serial('/dev/ttyACM0', baudrate = 9600, timeout = 1)
 	return ser
 
 def read_meteoData(serialPort):
@@ -31,13 +31,15 @@ def read_meteoData(serialPort):
 
 def main():
 	ser = open_serial_port()
+	t0 = time()
 	while True:
 		data = read_meteoData(ser)
 		if data:
 			#pass
-			file.writelines(str(clock())+' '+' '.join(data)+'\n')
+			file.writelines('%.10f'%(time()-t0)+' '+' '.join(data)+'\n')
 		else:
 			print("Wait...")
+		file.flush()
 		sleep(1)
 
 if __name__ == "__main__":
