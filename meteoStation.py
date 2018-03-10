@@ -1,5 +1,6 @@
 import serial
 import os
+import datetime
 from time import sleep, time
 
 file = open('data.txt', 'a')
@@ -8,7 +9,7 @@ def open_serial_port():
 	if os.name == 'nt':
 		ser = serial.Serial('COM3', baudrate = 9600, timeout = 1)
 	else:
-		ser = serial.Serial('/dev/ttyACM0', baudrate = 9600, timeout = 1)
+		ser = serial.Serial('/dev/ttyACM3', baudrate = 9600, timeout = 1)
 	return ser
 
 def read_meteoData(serialPort):
@@ -31,12 +32,12 @@ def read_meteoData(serialPort):
 
 def main():
 	ser = open_serial_port()
-	t0 = time()
 	while True:
 		data = read_meteoData(ser)
 		if data:
 			#pass
-			file.writelines('%.10f'%(time()-t0)+' '+' '.join(data)+'\n')
+			t = datetime.datetime.now()
+			file.writelines(t.strftime("%Y-%m-%d %H:%M:%S")+' '+' '.join(data)+'\n')
 		else:
 			print("Wait...")
 		file.flush()
