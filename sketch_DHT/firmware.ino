@@ -10,7 +10,7 @@ byte mac[] = { 0x70, 0x5A, 0x0F, 0x4D, 0x73, 0x6C };
 String message = "";
 double t_ir, t_amb, t_sky,  h; 
 double flux = -1.0;
-IPAddress server(172,27,76,59); 
+IPAddress server(123,456,789,0); 
 EthernetClient client;
 
 
