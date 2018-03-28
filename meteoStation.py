@@ -1,24 +1,22 @@
-import serial
 import os
 import datetime
+import socket
 from time import sleep, time
 
 file = open('data.txt', 'a')
 #file.write('Flux Humidity SkyT AmbientT InsideT\n')
-def open_serial_port():
-	if os.name == 'nt':
-		ser = serial.Serial('COM3', baudrate = 9600, timeout = 1)
-	else:
-		ser = serial.Serial('/dev/ttyACM3', baudrate = 9600, timeout = 1)
-	return ser
+def open_connection():
+	sock = socket.socket()
+	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	sock.bind(('172.27.76.59', 8765))
+	sock.listen(1)
+	conn, addr = sock.accept()
+	conn.settimeout(100)
+	return conn
 
-def read_meteoData(serialPort):
-	ser = serialPort
-	try:
-		data = ser.readline().split()
-		#print(data)
-	except:
-		return False
+def read_meteoData(conn):
+	data = conn.recv(256).split()
+	print(data)
 	if len(data) == 5:
 		data[0] = '%.2f' % float(data[0])
 		data[1] = '%.2f' % float(data[1])
@@ -27,15 +25,13 @@ def read_meteoData(serialPort):
 		data[4] = '%.2f' % float(data[4])
 	else:
 		return False
-	ser.reset_input_buffer()
 	return data
 
 def main():
-	ser = open_serial_port()
+	conn = open_connection()
 	while True:
-		data = read_meteoData(ser)
+		data = read_meteoData(conn)
 		if data:
-			#pass
 			t = datetime.datetime.now()
 			file.writelines(t.strftime("%Y-%m-%d %H:%M:%S")+' '+' '.join(data)+'\n')
 		else:
