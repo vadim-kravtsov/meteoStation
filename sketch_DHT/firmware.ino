@@ -10,7 +10,8 @@ byte mac[] = { 0x70, 0x5A, 0x0F, 0x4D, 0x73, 0x6C };
 String message = "";
 double t_ir, t_amb, t_sky,  h; 
 double flux = -1.0;
-IPAddress server(123,456,789,0); 
+int DO_RESET_ETH_SHIELD = 5;
+IPAddress server(172,27,76,59); 
 EthernetClient client;
 
 
@@ -18,24 +19,28 @@ EthernetClient client;
 #define SDA_PIN 20   //define the SDA pin
 #define SCL_PIN 21   //define the SCL pin
 #define DHTTYPE DHT22
- 
+
+    
+
 
 DHT dht(DHTPIN, DHTTYPE);
 MLX90615 mlx = MLX90615();
 Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
 
+
+
 void setup()
 {
+  delay(5000);
   Serial.begin(9600);
-  //Ethernet.begin(mac);
-  delay(1000);
   Serial.println("connecting...");
-
-  //if (client.connect(server, 8765)) {
-  //Serial.println("connected");
-  //  } else {
-  //Serial.println("connection failed");
-  //}
+  init_ethernet();
+  Serial.println("all ok...");
+  Ethernet.begin(mac);
+  delay(5000);
+  while (client.connect(server, 8765)!=0) {
+  Serial.println("connecting...");
+    }
   dht.begin();
   tsl.begin();
   mlx.begin();
@@ -48,7 +53,7 @@ void setup()
 
 void loop()
 {
-  delay(1000);
+  if (client.connected()){
   message = "";
   sensors_event_t event;
   tsl.getEvent(&event);
@@ -77,8 +82,30 @@ void loop()
   message.concat(t_ir);
   message.concat(" ");
   message.concat(t_amb);
-  //client.print(message);
+  client.print(message);
   Serial.println(message);
+  delay(60000);
+  } else {
+  client.stop();
+  delay(500);
+  client.connect(server, 8765);
+  client.print(message);
+  }
+}
+
+void init_ethernet()
+{
+ Serial.print("reset...");
+ pinMode(DO_RESET_ETH_SHIELD, OUTPUT);      // sets the digital pin as output
+ digitalWrite(DO_RESET_ETH_SHIELD, LOW);
+ delay(1000);  //for ethernet chip to reset
+ digitalWrite(DO_RESET_ETH_SHIELD, HIGH);
+ delay(1000);  //for ethernet chip to reset
+ pinMode(DO_RESET_ETH_SHIELD, INPUT);      // sets the digital pin input
+ delay(1000);  //for ethernet chip to reset
+ Ethernet.begin(mac);
+ delay(1000);
+
 }
 
 

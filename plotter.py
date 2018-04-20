@@ -30,11 +30,10 @@ for line in lines:
             # Include only points within last day
             times.append(seconds_from_now)
             flux.append(f)
-            skyTemp.append(sT)
+            skyTemp.append(sT-dT)
             ambTemp.append(aT)
             dhtTemp.append(dT)
             humidity.append(h)
-
 # Show ticks labels at the beginnings of all hours
 beginning_of_hour = time_now.replace(minute=0, second=0)
 seconds_from_beginning_of_hour = (time_now-beginning_of_hour).total_seconds()
@@ -50,45 +49,54 @@ for delta_hours in range(0, 24, 2):
 
 # make plots now
 style.use('bmh')
-fig, axes = plt.subplots(nrows=4, ncols=1, figsize = (7,10))
-ax1, ax2, ax3, ax4 = axes.flatten()
+fig, axes = plt.subplots(nrows=5, ncols=1, figsize = (7,14))
+ax1, ax2, ax3, ax4, ax5 = axes.flatten()
 
-# plot sky temperature
+# plot sky temperature for 24 hours
 ax1.clear()
 ax1.set_xlim(left=86400, right=0)
 ax1.set_xticks(ticks_locations)
 ax1.set_xticklabels(ticks_labels)
 ax1.plot(times, skyTemp, 'C0')
 ax1.grid(True)
-ax1.set_title('Sky temperature, $^\circ$C')
+ax1.set_title('Relative sky temperature [24 h], $^\circ$C')
+
+# plot sky temperature for last hour
+ax2.clear()
+ax2.set_xlim(left=3600, right=0)
+ax2.set_xticks(range(3600, -1, -300))
+ax2.set_xticklabels([str(m) for m in range(0, 61, 5)])
+ax2.plot(times, skyTemp, 'C0')
+ax2.grid(True)
+ax2.set_title('Relative sky temperature [1h], $^\circ$C')
 
 # plot humidity
-ax2.clear()
-ax2.set_xlim(left=86400, right=0)
-ax2.set_xticks(ticks_locations)
-ax2.set_xticklabels(ticks_labels)
-ax2.plot(times, humidity, 'C1')
-ax2.grid(True)
-ax2.set_title('Humidity, %')
-
-# plot flux
 ax3.clear()
 ax3.set_xlim(left=86400, right=0)
 ax3.set_xticks(ticks_locations)
 ax3.set_xticklabels(ticks_labels)
-ax3.plot(times, flux, 'navy')
-ax3.set_yscale('symlog')  # logarithmic scale for the flux
+ax3.plot(times, humidity, 'C1')
 ax3.grid(True)
-ax3.set_title('Flux, lux')
+ax3.set_title('Humidity, %')
 
-# plot ambient temperature
+# plot flux
 ax4.clear()
 ax4.set_xlim(left=86400, right=0)
 ax4.set_xticks(ticks_locations)
 ax4.set_xticklabels(ticks_labels)
-ax4.plot(times, dhtTemp, 'C3')
-ax4.set_title('Temperature, $^\circ$C')
+ax4.plot(times, flux, 'navy')
+ax4.set_yscale('symlog')  # logarithmic scale for the flux
 ax4.grid(True)
+ax4.set_title('Flux, lux')
+
+# plot ambient temperature
+ax5.clear()
+ax5.set_xlim(left=86400, right=0)
+ax5.set_xticks(ticks_locations)
+ax5.set_xticklabels(ticks_labels)
+ax5.plot(times, dhtTemp, 'C3')
+ax5.set_title('Temperature, $^\circ$C')
+ax5.grid(True)
 
 #ani = animation.FuncAnimation(fig, animate, interval = 10000)
 fig.tight_layout()
