@@ -6,4 +6,4 @@ Meteostation on Arduino with **DHT22** **humidity** and **temperature** sensor, 
 ![sideview.png](https://github.com/vadim-kravtsov/meteoStation/blob/master/images/sideview.png)
 ![topview.png](https://github.com/vadim-kravtsov/meteoStation/blob/master/images/topview.png)
 ## Data
-![result.svg](https://github.com/vadim-kravtsov/meteoStation/blob/master/images/result.png)
+![result.svg](https://github.com/vadim-kravtsov/meteoStation/blob/master/images/result.svg)
