@@ -3,8 +3,9 @@ import warnings
 import datetime
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.image as mpimg
 #import matplotlib.animation as animation
-from matplotlib import style
+from matplotlib import style, cm
 
 def dew_point(t, h):
     """Calc dew point"""
@@ -65,20 +66,70 @@ for delta_hours in range(0, 24, 2):
 style.use('bmh')
 fig = plt.figure(figsize = (7,14))
 
-
+font = {'family': 'sans',
+        'weight': 'normal',
+        }
 
 #plot current values
+
+#plot h-level
 gs1 = gridspec.GridSpec(1, 4)
-tx1 = fig.add_subplot(gs1[0])
-tx2 = fig.add_subplot(gs1[1])
-tx3 = fig.add_subplot(gs1[2])
-tx4 = fig.add_subplot(gs1[3])
+tx1 = fig.add_subplot(gs1[0], xticks = [], yticks = [])
+h = humidity[0]
+c = ("#FF5353" if h>80 else ("#FFBE28" if h>60 else "#2DC800"))
+tx1.fill([0,0,1,1],[0,h,h,0], color = c)
+tx1.hlines(h, 0, 1,color = 'grey', linewidth = 1)
+tx1.text(0.5, h/2-10, '%1.1f%%'%h, fontdict = font, horizontalalignment='center', fontsize=20)
+tx1.set_title('humidity')
+tx1.set_ylim(0,100)
+tx1.set_xlim(0,1)
+tx1.grid(False)
+
+#plot temperature
+tx2 = fig.add_subplot(gs1[1], xticks = [], yticks = [])
+tx2.set_title('temperature')
+t = outTemp[-1] 
+tx2.fill([0,0,1,1],[0,100,100,0], color = "#C0E0DA")
+tx2.text(0.5, 40, '%1.1f$^\circ$C'%t, fontdict = font, horizontalalignment='center', fontsize=20)
+tx2.set_ylim(0,100)
+tx2.set_xlim(0,1)
+
+
+#plot cloudiness value
+
+tx3 = fig.add_subplot(gs1[2], xticks = [], yticks = [])
+tx3.set_title('cloudiness')
+s = skyTemp[-1]
+cmap = ["#2DC800", "#32DF00", "#DFDF00", "#F9BB00", "#FF800D"]
+if s>0:
+    c_value = 5
+elif -10<s<0:
+    c_value = 4
+elif -20<s<-10:
+    c_value = 3
+elif -30<s<-20:
+    c_value = 2
+elif -35<s<-30:
+    c_value = 1
+else:
+    c_value = 0
+tx3.fill([0,0,1,1],[0,100,100,0], color = cmap[c_value])
+tx3.text(0.5, 40, '%i'%c_value, fontdict = font, horizontalalignment='center', fontsize=20)
+tx3.set_ylim(0,100)
+tx3.set_xlim(0,1)
+
+#plot dew point
+tx4 = fig.add_subplot(gs1[3], xticks = [], yticks = [])
+tx4.set_title('dew point')
+dp = dew_point(t, h)
+tx4.fill([0,0,1,1],[0,100,100,0], color = "#8ED6EA")
+tx4.text(0.5, 40, '%1.1f$^\circ$C'%dp, fontdict = font, horizontalalignment='center', fontsize=20)
+tx4.set_ylim(0,100)
+tx4.set_xlim(0,1)
+
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)
-    # This raises warnings since tight layout cannot
-    # handle gridspec automatically. We are going to
-    # do that manually so we can filter the warning.
     gs1.tight_layout(fig, rect=[None, 0.875, None, None])
 
 
@@ -95,12 +146,9 @@ ax1.set_xlim(left=3600, right=0)
 ax1.set_xticks(range(3600, -1, -300))
 ax1.set_xticklabels([str(m) for m in range(0, 61, 5)])
 ax1.plot(times, skyTemp, 'C7')
-ax1.hlines(-5, times[0], times[-1], linestyles = 'dashed', linewidth = 1,
-                         colors = 'r', label = 'cloudy')
-ax1.hlines(-15, times[0], times[-1], linestyles = 'dashed', linewidth = 1,
-                         colors = 'y', label = 'partly cloudless')
-ax1.hlines(-25, times[0], times[-1], linestyles = 'dashed', linewidth = 1,
-                         colors = 'g', label = 'cloudless')
+ax1.hlines(0, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'r', label = 'cloudy')
+ax1.hlines(-15, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'y', label = 'partly cloudless')
+ax1.hlines(-30, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'g', label = 'cloudless')
 ax1.legend(framealpha = 1, facecolor = 'w')
 ax1.grid(True)
 ax1.set_title('Relative sky temperature [1h], $^\circ$C')
@@ -111,12 +159,9 @@ ax2.set_xlim(left=86400, right=0)
 ax2.set_xticks(ticks_locations)
 ax2.set_xticklabels(ticks_labels)
 ax2.plot(times, skyTemp, 'C0')
-ax2.hlines(-5, times[0], times[-1], linestyles = 'dashed', linewidth = 1,
-                         colors = 'r', label = 'cloudy')
-ax2.hlines(-15, times[0], times[-1], linestyles = 'dashed', linewidth = 1,
-                         colors = 'y', label = 'partly cloudless')
-ax2.hlines(-25, times[0], times[-1], linestyles = 'dashed', linewidth = 1,
-                         colors = 'g', label = 'cloudless')
+ax2.hlines(0, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'r', label = 'cloudy')
+ax2.hlines(-15, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'y', label = 'partly cloudless')
+ax2.hlines(-30, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'g', label = 'cloudless')
 ax2.grid(True)
 ax2.set_title('Relative sky temperature [24 h], $^\circ$C')
 
@@ -155,9 +200,6 @@ ax5.grid(True)
 #ani = animation.FuncAnimation(fig, animate, interval = 10000)
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)
-    # This raises warnings since tight layout cannot
-    # handle gridspec automatically. We are going to
-    # do that manually so we can filter the warning.
     gs2.tight_layout(fig, rect=[None, None, None, 0.875])
 
 #plt.show()
