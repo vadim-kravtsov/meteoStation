@@ -6,6 +6,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.image as mpimg
 #import matplotlib.animation as animation
 from matplotlib import style, cm
+from os import popen
 
 def dew_point(t, h):
     """Calc dew point"""
@@ -18,10 +19,11 @@ def dew_line(T, H):
     """Calc dew line"""
     return [dew_point(t, h) for t, h in zip(T, H)]
 
-lines = open('data.txt', 'r').readlines()
+lines = open('/home/meteo/data/data.txt', 'r').readlines()
+#lines = open('data.txt', 'r').readlines()
 if len(lines) >= 2880:
     date = datetime.datetime.now().strftime("%Y%m%d")
-    archiveData = open('archive/%s.txt'%date, 'w')
+    archiveData = open('/home/meteo/data/archive/%s.txt'%date, 'w')
     for line in lines[:-1440]:
         archiveData.write(str(line))
     archiveData.close()
@@ -35,21 +37,19 @@ time_now = datetime.datetime.now()
 for line in lines:
     if len(line) > 1:
         d, t = line.split()[:2]
-        f, h, sT, iT, oT = [float(x) for x in line.split()[2:]]
-        if f <= 5:
-            f = 0
-        if isnan(f) or isnan(h) or isnan(sT) or isnan(oT) or isnan(iT) or isnan(h):
-            continue
+        #outH, outT, inH, inT, irT, skyT
+        oH, oT, iH, iT, irT, sT = [float(x) for x in line.split()[2:]]
+#       if isnan(f) or isnan(h) or isnan(sT) or isnan(oT) or isnan(iT) or isnan(h):
+#            continue
         t = datetime.datetime.strptime(d+' '+t, "%Y-%m-%d %H:%M:%S")
         seconds_from_now = (time_now - t).total_seconds()
         if seconds_from_now <= 86400:
             # Include only points within last day
             times.append(seconds_from_now)
-            flux.append(f)
-            skyTemp.append(sT-oT)
+            skyTemp.append(sT-abs(oT))
             inTemp.append(iT)
             outTemp.append(oT)
-            humidity.append(h)
+            humidity.append(oH)
 # Show ticks labels at the beginnings of all hours
 beginning_of_hour = time_now.replace(minute=0, second=0)
 seconds_from_beginning_of_hour = (time_now-beginning_of_hour).total_seconds()
@@ -71,11 +71,28 @@ font = {'family': 'sans',
         }
 
 #plot current values
+#uptime = popen('ps -eo args,etime|grep meteoStation.py').read().split()[-1]
+#ut = uptime.split('-')
+#uptime = "%s day and %s"%(ut[0],ut[1]) if len(ut)==2 else 0
+gs0 = gridspec.GridSpec(1, 1)
+header = fig.add_subplot(gs0[0], xticks = [], yticks = [])
+header.set_ylim(100,0)
+header.set_xlim(0,100)
+header.patch.set_visible(False)
+#header.text(2,75,'last update: %s '%t, fontdict = font, fontsize = 12)
+#if uptime:
+#    header.text(22,75,'uptime: %s'%uptime, fontdict = font, fontsize = 12)
+header.text(22, 75, 'BETA TESTING, BETA TESTING, BETA TESTING!!!', fontdict = font, fontsize = 12)
+header.grid(False)
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", UserWarning)
+    gs0.tight_layout(fig, rect=[0.051, 0.960, 0.99, None])
+
 
 #plot h-level
 gs1 = gridspec.GridSpec(1, 4)
 tx1 = fig.add_subplot(gs1[0], xticks = [], yticks = [])
-h = humidity[0]
+h = humidity[-1]
 c = ("#FF5353" if h>80 else ("#FFBE28" if h>60 else "#2DC800"))
 tx1.fill([0,0,1,1],[0,h,h,0], color = c)
 tx1.hlines(h, 0, 1,color = 'grey', linewidth = 1)
@@ -89,7 +106,8 @@ tx1.grid(False)
 tx2 = fig.add_subplot(gs1[1], xticks = [], yticks = [])
 tx2.set_title('temperature')
 t = outTemp[-1] 
-tx2.fill([0,0,1,1],[0,100,100,0], color = "#C0E0DA")
+c = '#fc913a' if t>10 else ('#3b74bf' if t<-10 else ('#a0ccff' if t<0 else '#ECDB54'))
+tx2.fill([0,0,1,1],[0,100,100,0], color = c)
 tx2.text(0.5, 40, '%1.1f$^\circ$C'%t, fontdict = font, horizontalalignment='center', fontsize=20)
 tx2.set_ylim(0,100)
 tx2.set_xlim(0,1)
@@ -100,10 +118,10 @@ tx2.set_xlim(0,1)
 tx3 = fig.add_subplot(gs1[2], xticks = [], yticks = [])
 tx3.set_title('cloudiness')
 s = skyTemp[-1]
-cmap = ["#2DC800", "#32DF00", "#DFDF00", "#F9BB00", "#FF800D"]
-if s>0:
+cmap = ["#2DC800", "#32DF00", "#DFDF00", "#F9BB00", "#FF800D", "#ff4e50"]
+if s>-1:
     c_value = 5
-elif -10<s<0:
+elif -10<s<-1:
     c_value = 4
 elif -20<s<-10:
     c_value = 3
@@ -118,7 +136,7 @@ tx3.text(0.5, 40, '%i'%c_value, fontdict = font, horizontalalignment='center', f
 tx3.set_ylim(0,100)
 tx3.set_xlim(0,1)
 
-#plot dew point
+#plot dew pointw
 tx4 = fig.add_subplot(gs1[3], xticks = [], yticks = [])
 tx4.set_title('dew point')
 dp = dew_point(t, h)
@@ -130,21 +148,22 @@ tx4.set_xlim(0,1)
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)
-    gs1.tight_layout(fig, rect=[None, 0.875, None, None])
+    gs1.tight_layout(fig, rect=[0.051, 0.820, 0.99, 0.960])
 
 
-gs2 = gridspec.GridSpec(5, 1)
+gs2 = gridspec.GridSpec(4, 1)
 ax1 = fig.add_subplot(gs2[0])
 ax2 = fig.add_subplot(gs2[1])
 ax3 = fig.add_subplot(gs2[2])
 ax4 = fig.add_subplot(gs2[3])
-ax5 = fig.add_subplot(gs2[4])
+#ax5 = fig.add_subplot(gs2[4])
 
 # plot sky temperature for last hour
 ax1.clear()
+ax1.set_ylim(-50,20)
 ax1.set_xlim(left=3600, right=0)
 ax1.set_xticks(range(3600, -1, -300))
-ax1.set_xticklabels([str(m) for m in range(0, 61, 5)])
+ax1.set_xticklabels([str(m) for m in range(60,-5, -5)])
 ax1.plot(times, skyTemp, 'C7')
 ax1.hlines(0, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'r', label = 'cloudy')
 ax1.hlines(-15, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'y', label = 'partly cloudless')
@@ -155,6 +174,7 @@ ax1.set_title('Relative sky temperature [1h], $^\circ$C')
 
 # plot sky temperature for 24 hours
 ax2.clear()
+ax2.set_ylim(-50, 20)
 ax2.set_xlim(left=86400, right=0)
 ax2.set_xticks(ticks_locations)
 ax2.set_xticklabels(ticks_labels)
@@ -175,32 +195,33 @@ ax3.grid(True)
 ax3.set_title('Humidity, %')
 
 # plot flux
+#ax4.clear()
+#ax4.set_xlim(left=86400, right=0)
+#ax4.set_xticks(ticks_locations)
+#ax4.set_xticklabels(ticks_labels)
+#ax4.plot(times, flux, 'navy')
+#ax4.set_yscale('symlog')  # logarithmic scale for the flux
+#ax4.grid(True)
+#ax4.set_title('Flux, lux')
+
+# plot ambient temperature
 ax4.clear()
 ax4.set_xlim(left=86400, right=0)
 ax4.set_xticks(ticks_locations)
 ax4.set_xticklabels(ticks_labels)
-ax4.plot(times, flux, 'navy')
-ax4.set_yscale('symlog')  # logarithmic scale for the flux
-ax4.grid(True)
-ax4.set_title('Flux, lux')
-
-# plot ambient temperature
-ax5.clear()
-ax5.set_xlim(left=86400, right=0)
-ax5.set_xticks(ticks_locations)
-ax5.set_xticklabels(ticks_labels)
-ax5.plot(times, outTemp, 'C3', label = 'outside', linewidth = 2.5)
-ax5.plot(times, dew_line(outTemp, humidity),
+ax4.plot(times, outTemp, 'C3', label = 'outside', linewidth = 2.5)
+ax4.plot(times, dew_line(outTemp, humidity),
                          linewidth = 1, color = 'C5', label = 'dew point')
-#ax5.plot(times, inTemp, 'C1', label = 'inside')
-ax5.set_title('Temperature, $^\circ$C')
-ax5.legend()
-ax5.grid(True)
+#ax4.plot(times, inTemp, 'C1', label = 'inside')
+ax4.set_title('Temperature, $^\circ$C')
+ax4.legend()
+ax4.grid(True)
 
 #ani = animation.FuncAnimation(fig, animate, interval = 10000)
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)
-    gs2.tight_layout(fig, rect=[None, None, None, 0.875])
+    gs2.tight_layout(fig, rect=[None, None, None, 0.820])
 
 #plt.show()
-plt.savefig('meteo_plot.svg')
+plt.savefig('/home/meteo/data/meteo_plot.svg', format='svg')
+#plt.savefig('meteo_plot.svg', format='svg')
