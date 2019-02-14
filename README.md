@@ -5,4 +5,4 @@ Meteostation on Arduino with **TroykaMeteoSensor** **humidity** and **temperatur
 ## Realization
 ![project.png](https://github.com/vadim-kravtsov/meteoStation/blob/master/images/project.png)
 ## Data
-![result.svg](https://github.com/vadim-kravtsov/meteoStation/blob/master/images/meteo_plot.png)
+![result.svg](https://github.com/vadim-kravtsov/meteoStation/blob/master/images/meteo_plot.svg)
