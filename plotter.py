@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from math import isnan, exp, log
 import warnings
 import datetime
@@ -6,7 +8,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.image as mpimg
 #import matplotlib.animation as animation
 from matplotlib import style, cm
-from os import popen
+from os import popen, system
 
 def dew_point(t, h):
     """Calc dew point"""
@@ -21,12 +23,12 @@ def dew_line(T, H):
 
 lines = open('/home/meteo/data/data.txt', 'r').readlines()
 #lines = open('data.txt', 'r').readlines()
-if len(lines) >= 2880:
-    date = datetime.datetime.now().strftime("%Y%m%d")
-    archiveData = open('/home/meteo/data/archive/%s.txt'%date, 'w')
-    for line in lines[:-1440]:
-        archiveData.write(str(line))
-    archiveData.close()
+#if len(lines) >= 2880:
+#    date = datetime.datetime.now().strftime("%Y%m%d")
+#    archiveData = open('/home/meteo/data/archive/%s.txt'%date, 'w')
+#    for line in lines[-1440:]:
+#        archiveData.write(str(line))
+#    archiveData.close()
 times = []
 flux = []
 skyTemp = []
@@ -46,7 +48,10 @@ for line in lines:
         if seconds_from_now <= 86400:
             # Include only points within last day
             times.append(seconds_from_now)
-            skyTemp.append(sT-abs(oT))
+            if oT >= 0:
+                skyTemp.append(sT-abs(irT))
+            else:
+                skyTemp.append(sT+abs(irT))
             inTemp.append(iT)
             outTemp.append(oT)
             humidity.append(oH)
@@ -82,7 +87,12 @@ header.patch.set_visible(False)
 #header.text(2,75,'last update: %s '%t, fontdict = font, fontsize = 12)
 #if uptime:
 #    header.text(22,75,'uptime: %s'%uptime, fontdict = font, fontsize = 12)
-header.text(22, 75, 'BETA TESTING, BETA TESTING, BETA TESTING!!!', fontdict = font, fontsize = 12)
+if skyTemp[-1]>0.2:
+    header.text(6, 75, 'WARNING! CLOUD SENSOR MAY BE COVERED BY SNOW/WATER!', fontdict = font, fontsize = 12, color = 'red')
+    #header.text(20, 75, 'BETA TESTING! WEATHER IN 3104', fontdict = font, fontsize = 12, color = 'red')
+else:
+    header.text(3, 75, 'last update: %s'%(datetime.datetime.strftime(time_now, '%H:%M')), fontdict = font, fontsize = 12)
+    #header.text(43, 75, 'WEATHER IN 3104', fontdict = font, fontsize = 12, color = 'red')
 header.grid(False)
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", UserWarning)
@@ -96,7 +106,8 @@ h = humidity[-1]
 c = ("#FF5353" if h>80 else ("#FFBE28" if h>60 else "#2DC800"))
 tx1.fill([0,0,1,1],[0,h,h,0], color = c)
 tx1.hlines(h, 0, 1,color = 'grey', linewidth = 1)
-tx1.text(0.5, h/2-10, '%1.1f%%'%h, fontdict = font, horizontalalignment='center', fontsize=20)
+tx1.text(0.5, h/2-8, '%1.1f%%'%h, fontdict = font, horizontalalignment='center', fontsize=20)
+#tx1.text(0.5, h/2-10, 'high :)', fontdict = font, horizontalalignment='center', fontsize=20)
 tx1.set_title('humidity')
 tx1.set_ylim(0,100)
 tx1.set_xlim(0,1)
@@ -121,15 +132,15 @@ s = skyTemp[-1]
 cmap = ["#2DC800", "#32DF00", "#DFDF00", "#F9BB00", "#FF800D", "#ff4e50"]
 if s>-1:
     c_value = 5
-elif -10<s<-1:
+elif -5<s<-1:
     c_value = 4
-elif -20<s<-10:
+elif -10<s<-5:
     c_value = 3
-elif -30<s<-20:
+elif -15<s<-10:
     c_value = 2
-elif -35<s<-30:
+elif -20<s<-15:
     c_value = 1
-else:
+elif s<-20:
     c_value = 0
 tx3.fill([0,0,1,1],[0,100,100,0], color = cmap[c_value])
 tx3.text(0.5, 40, '%i'%c_value, fontdict = font, horizontalalignment='center', fontsize=20)
@@ -160,28 +171,28 @@ ax4 = fig.add_subplot(gs2[3])
 
 # plot sky temperature for last hour
 ax1.clear()
-ax1.set_ylim(-50,20)
+ax1.set_ylim(-35,10)
 ax1.set_xlim(left=3600, right=0)
 ax1.set_xticks(range(3600, -1, -300))
 ax1.set_xticklabels([str(m) for m in range(60,-5, -5)])
 ax1.plot(times, skyTemp, 'C7')
-ax1.hlines(0, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'r', label = 'cloudy')
-ax1.hlines(-15, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'y', label = 'partly cloudless')
-ax1.hlines(-30, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'g', label = 'cloudless')
+ax1.axhline(0, linestyle = 'dashed', linewidth = 1, color = 'r', label = 'cloudy')
+ax1.axhline(-12.5, linestyle = 'dashed', linewidth = 1, color = 'y', label = 'partly cloudless')
+ax1.axhline(-25, linestyle = 'dashed', linewidth = 1, color = 'g', label = 'cloudless')
 ax1.legend(framealpha = 1, facecolor = 'w')
 ax1.grid(True)
 ax1.set_title('Relative sky temperature [1h], $^\circ$C')
 
 # plot sky temperature for 24 hours
 ax2.clear()
-ax2.set_ylim(-50, 20)
+ax2.set_ylim(-35, 10)
 ax2.set_xlim(left=86400, right=0)
 ax2.set_xticks(ticks_locations)
 ax2.set_xticklabels(ticks_labels)
 ax2.plot(times, skyTemp, 'C0')
-ax2.hlines(0, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'r', label = 'cloudy')
-ax2.hlines(-15, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'y', label = 'partly cloudless')
-ax2.hlines(-30, times[0], times[-1], linestyles = 'dashed', linewidth = 1, colors = 'g', label = 'cloudless')
+ax2.axhline(0, linestyle = 'dashed', linewidth = 1, color = 'r', label = 'cloudy')
+ax2.axhline(-12.5, linestyle = 'dashed', linewidth = 1, color = 'y', label = 'partly cloudless')
+ax2.axhline(-25, linestyle = 'dashed', linewidth = 1, color = 'g', label = 'cloudless')
 ax2.grid(True)
 ax2.set_title('Relative sky temperature [24 h], $^\circ$C')
 
@@ -210,9 +221,10 @@ ax4.set_xlim(left=86400, right=0)
 ax4.set_xticks(ticks_locations)
 ax4.set_xticklabels(ticks_labels)
 ax4.plot(times, outTemp, 'C3', label = 'outside', linewidth = 2.5)
+ax4.axhline(0,linestyle = 'dashed', linewidth = 1, color = 'y')
 ax4.plot(times, dew_line(outTemp, humidity),
                          linewidth = 1, color = 'C5', label = 'dew point')
-#ax4.plot(times, inTemp, 'C1', label = 'inside')
+#ax4.plot(times, inTemp, 'C2', label = 'infrared (in the box)')
 ax4.set_title('Temperature, $^\circ$C')
 ax4.legend()
 ax4.grid(True)
@@ -225,3 +237,20 @@ with warnings.catch_warnings():
 #plt.show()
 plt.savefig('/home/meteo/data/meteo_plot.svg', format='svg')
 #plt.savefig('meteo_plot.svg', format='svg')
+
+if abs((time_now - time_now.replace(hour = 0, minute = 0, second = 0, microsecond = 0)).total_seconds()) < 300:
+    date = datetime.datetime.now().strftime("%Y%m%d")
+    archiveData = open('/home/meteo/data/archive/%s.txt'%date, 'w')
+    lastData = open('/home/meteo/data/data1.txt', 'w')
+    for line in lines:
+        if len(line) > 1:
+            d, t = line.split()[:2]
+            t = datetime.datetime.strptime(d+' '+t, "%Y-%m-%d %H:%M:%S")
+            seconds_from_now = (time_now - t).total_seconds()
+            if seconds_from_now <= 172800:
+                lastData.write(line)
+                if seconds_from_now <= 86400:
+                    archiveData.write(line)
+    archiveData.close()
+    lastData.close()
+    system('cp data1.txt data.txt')

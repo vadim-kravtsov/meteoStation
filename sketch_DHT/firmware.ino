@@ -1,101 +1,105 @@
+#include <TroykaMeteoSensor.h>
+
 #include <mlx90615.h>
 
-#include "DHT.h"
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_TSL2561_U.h>
 #include <Ethernet.h>
 
 byte mac[] = { 0x70, 0x5A, 0x0F, 0x4D, 0x73, 0x6C };
+byte ip[] = { 192, 168, 1, 41 };    
 String message = "";
-double t_ir, t_amb, t_sky,  h; 
+String comment = "";
+double t_ir, t_out, t_sky, h_out; 
 double flux = -1.0;
 int DO_RESET_ETH_SHIELD = 5;
-IPAddress server(172,27,76,59); 
+int state; 
+int numbOfFails = 0;
+IPAddress server(172,27,76,59);
+//IPAddress server(195,19,241,156);
 EthernetClient client;
 
 
-#define DHTPIN 2     // what digital pin we're connected to
 #define SDA_PIN 20   //define the SDA pin
 #define SCL_PIN 21   //define the SCL pin
-#define DHTTYPE DHT22
-
+void itit_ethernet(void);
     
-
-
-DHT dht(DHTPIN, DHTTYPE);
 MLX90615 mlx = MLX90615();
-Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
+TroykaMeteoSensor tms;
 
-
-
-void setup()
-{
-  delay(5000);
-  Serial.begin(9600);
-  Serial.println("connecting...");
+void setup(){
+  delay(1000);
+  //Serial.begin(9600);
+  //Serial.println("connecting...");
   init_ethernet();
-  Serial.println("all ok...");
+  //Serial.println("all ok...");
   Ethernet.begin(mac);
   delay(5000);
   while (client.connect(server, 8765)!=0) {
   Serial.println("connecting...");
-    }
-  dht.begin();
-  tsl.begin();
+  }
+  //Serial.println("serial");
   mlx.begin();
-  sensor_t sensor;
-  tsl.getSensor(&sensor);
-  tsl.enableAutoRange(true); 
-  tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS);
-  //Serial.println("Flux Humidity SkyT AmbT InsideT");
+  tms.begin();
+  //Serial.println("H_out T_out H_in T_in T_ir T_sky");
   }
 
-void loop()
-{
+void loop(){
+  delay(30000);
   if (client.connected()){
-  message = "";
-  sensors_event_t event;
-  tsl.getEvent(&event);
- 
-  if (event.light)
-  {
-   flux = event.light;
-   }
-  else
-  {
-    flux = 0;
+    message = "";
+    //comment = "";
+    
+    state = tms.read();
+   
+    if (state == 0){
+        h_out = tms.getHumidity();
+        t_out = tms.getTemperatureC();
+        //comment.concat("#TroykaMeteoSensor is OK");
+        //client.print(comment);
+        //Serial.print(comment);
     }
-  h = dht.readHumidity();
-  t_amb = dht.readTemperature();
-  t_ir = mlx.get_ambient_temp();
-  t_sky = mlx.get_object_temp();
-  if (isnan(h) || isnan(t_amb)) {
-    Serial.println("Failed to read from DHT sensor!");
-  }
-  message.concat(flux);
-  message.concat(" ");
-  message.concat(h);
-  message.concat(" ");
-  message.concat(t_sky);
-  message.concat(" ");
-  message.concat(t_ir);
-  message.concat(" ");
-  message.concat(t_amb);
+    t_ir = mlx.get_ambient_temp();
+    t_sky = mlx.get_object_temp();
+    if (t_ir>300 || isnan(t_out)) {
+          //Serial.println("Failed to read from sensors!");
+          return;
+      } 
+    else {
+          message.concat(h_out);
+          //message.concat(h_in);
+          message.concat(" ");
+          message.concat(t_out);
+          message.concat(" ");
+          message.concat(h_out);
+          message.concat(" ");
+          message.concat(t_out);
+          message.concat(" ");
+          message.concat(t_ir);
+          message.concat(" ");
+          message.concat(t_sky);
+    }  
   client.print(message);
-  Serial.println(message);
-  delay(60000);
-  } else {
-  client.stop();
-  delay(500);
-  client.connect(server, 8765);
-  client.print(message);
+  numbOfFails = 0;
+  //Serial.println(message);
+  } else {  
+      //Serial.println("kjhgkjhg");
+      numbOfFails = numbOfFails + 1;
+      client.stop();
+      delay(500);
+      client.connect(server, 8765);
+      client.print(message);
+      if (numbOfFails > 5){
+        init_ethernet();
+        }
+    }
   }
-}
 
-void init_ethernet()
+void init_ethernet(void)
 {
- Serial.print("reset...");
+ //Serial.print("reset...");
+ numbOfFails = 0;
  pinMode(DO_RESET_ETH_SHIELD, OUTPUT);      // sets the digital pin as output
  digitalWrite(DO_RESET_ETH_SHIELD, LOW);
  delay(1000);  //for ethernet chip to reset
@@ -105,7 +109,4 @@ void init_ethernet()
  delay(1000);  //for ethernet chip to reset
  Ethernet.begin(mac);
  delay(1000);
-
 }
-
-

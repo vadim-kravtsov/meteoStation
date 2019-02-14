@@ -3,7 +3,6 @@ import datetime
 import socket
 from time import sleep, time
 
-file = open('data.txt', 'a')
 #file.write('Flux Humidity SkyT infraredT outsideT\n')
 def open_connection():
 	sock = socket.socket()
@@ -22,6 +21,9 @@ def read_meteoData(conn):
 	data = conn.recv(256).split()
 	#print(data)
 	if len(data) == 6:
+		if data[0] == '0.00':
+		    print('Troyka sensor return 0.00')
+		    return False
 		data[0] = '%.2f' % float(data[0])
 		data[1] = '%.2f' % float(data[1])
 		data[2] = '%.2f' % float(data[2])
@@ -35,18 +37,17 @@ def read_meteoData(conn):
 def main():
 	conn = open_connection()
 	while True:
-		#print('in cycle')
+		#print('Waiting for the data...')
 		data = read_meteoData(conn)
 		if data:
+			f = open('data.txt', 'a')
 			t = datetime.datetime.now()
 			line = t.strftime("%Y-%m-%d %H:%M:%S")+' '+' '.join(data)+'\n'
-			file.writelines(line)
+			f.writelines(line)
+			f.flush()
+			f.close()
 			print(line)
-		else:
-			print("Wait...")
-		file.flush()
 		sleep(1)
-
 
 if __name__ == "__main__":
 	main()
